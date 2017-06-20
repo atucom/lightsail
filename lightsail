@@ -1,0 +1,94 @@
+#!/usr/local/bin/python2
+# @atucom 2017
+# Lightsail VPS Management Tool
+
+import boto3
+import argparse
+import sys
+import subprocess
+
+
+# This is the name of the key you use in AWS
+sshkeylocation = 'YOURSSHKEYNAMEHERE'
+# This is the path of the ssh key you use on your local system
+localsshkeypath = '/Users/YOURUSER/.ssh/' + sshkeylocation
+
+
+class Lightsail():
+  def __init__(self):
+    '''Currently performs all actions in the us-east-1 zone'''
+    self.lightsailclient = boto3.client('lightsail', region_name='us-east-1')
+    self.zone = 'us-east-1a'
+
+  def list_instances(self):
+    return self.lightsailclient.get_instances()
+
+  def create_instance(self, lightsail_name):
+    '''Creates an Ubuntu 16.04 nano VPS'''
+    response = self.lightsailclient.create_instances(
+        instanceNames=[lightsail_name],
+        availabilityZone=self.zone,
+        blueprintId='ubuntu_16_04',
+        bundleId='nano_1_0',
+        keyPairName=sshkeylocation
+    )
+    return response
+
+  def get_instance_info(self, lightsail_name):
+    return self.lightsailclient.get_instance(instanceName=lightsail_name)
+
+  def get_instance_ip(self, lightsail_name):
+    ip = self.get_instance_info(lightsail_name)
+    return ip['instance']['publicIpAddress']
+
+  def get_instance_username(self, lightsail_name):
+    username = self.get_instance_info(lightsail_name)
+    return username['instance']['username']
+
+  def delete_instance(self, lightsail_name):
+    return self.lightsailclient.delete_instance(instanceName=lightsail_name)
+
+  def connect_to_instance(self, lightsail_name):
+    pass
+
+
+def main():
+    """Main Execution"""
+    parser = argparse.ArgumentParser(description='Lightsail VPS Management Tool',
+                                    formatter_class=argparse.RawDescriptionHelpFormatter)
+
+    parser.add_argument('--list',action="store_true",
+              help='List your Lightsail instances')
+    parser.add_argument('--create', action="store", metavar="NAME",
+              help='Create your Lightsail instance given a instance name')
+    parser.add_argument('--delete',action="store", nargs= "+", metavar="NAME",
+              help='Delete your specified Lightsail instance(s)')
+    parser.add_argument('--ssh',action="store", metavar="NAME",
+              help='SSH to your Lightsail instance')
+    args = parser.parse_args()  # reference args with args.argument_name
+    if len(sys.argv)==1:
+        parser.print_help()
+        sys.exit(1)
+
+    if args.list:
+      # list Name: , Username:, IP:, State: for each instance on lightsail
+      instances = Lightsail().list_instances()
+      for i in instances['instances']:
+        print("Name: %s, Username: %s, IP: %s, State: %s" % (i['name'], i['username'],i['publicIpAddress'],i['state']['name']))
+    
+    if args.create:
+      Lightsail().create_instance(args.create)
+      print("#SSH Login: \n    ssh %s@%s -i %s" % (Lightsail().get_instance_username(args.create), Lightsail().get_instance_ip(args.create), localsshkeypath))
+    
+    if args.delete:
+      for name in args.delete:
+        Lightsail().delete_instance(name)
+    
+    if args.ssh:
+      sshline = "ssh %s@%s -i %s" % (Lightsail().get_instance_username(args.ssh), Lightsail().get_instance_ip(args.ssh), localsshkeypath)
+      print("Running the following command: \n\t" + sshline)
+      subprocess.call(sshline, shell=True)
+
+
+if __name__ == '__main__':
+  sys.exit(main())
