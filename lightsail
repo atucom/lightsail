@@ -6,12 +6,16 @@ import boto3
 import argparse
 import sys
 import subprocess
+import ConfigParser
+import os
 
 
-# This is the name of the key you use in AWS
-sshkeylocation = 'YOURSSHKEYNAMEHERE'
-# This is the path of the ssh key you use on your local system
-localsshkeypath = '/Users/YOURUSER/.ssh/' + sshkeylocation
+
+config = ConfigParser.ConfigParser()
+config.read(os.path.expanduser('~/.lightsail.conf'))
+
+sshkeylocation = config.get('ssh','keyname')
+localsshkeypath = config.get('ssh', 'keypath') + sshkeylocation
 
 
 class Lightsail():
