@@ -16,13 +16,15 @@ config.read(os.path.expanduser('~/.lightsail.conf'))
 
 sshkeylocation = config.get('ssh','keyname')
 localsshkeypath = config.get('ssh', 'keypath') + sshkeylocation
+region = config.get('ssh', 'region')
+zone = config.get('ssh', 'zone')
 
 
 class Lightsail():
   def __init__(self):
-    '''Currently performs all actions in the us-east-1 zone'''
-    self.lightsailclient = boto3.client('lightsail', region_name='us-east-1')
-    self.zone = 'us-east-1a'
+    '''Initiate the lightsail instance'''
+    self.lightsailclient = boto3.client('lightsail', region_name=region)
+    self.zone = zone
 
   def list_instances(self):
     return self.lightsailclient.get_instances()
