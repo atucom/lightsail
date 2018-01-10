@@ -1,5 +1,5 @@
-#!/usr/local/bin/python2
-# @atucom 2017
+#!/usr/bin/env python2
+# @atucom 2018
 # Lightsail VPS Management Tool
 
 import boto3
@@ -57,10 +57,14 @@ class Lightsail():
   def connect_to_instance(self, lightsail_name):
     pass
 
+  def put_instance_public_ports(self, lightsail_name, ports):
+      return self.lightsailclient.put_instance_public_ports(portInfos=ports,
+                                                            instanceName=lightsail_name)
+
 
 def main():
     """Main Execution"""
-    parser = argparse.ArgumentParser(description='Lightsail VPS Management Tool',
+    parser = argparse.ArgumentParser(description='Amazon Lightsail VPS Management Tool',
                                     formatter_class=argparse.RawDescriptionHelpFormatter)
 
     parser.add_argument('--list',action="store_true",
@@ -71,6 +75,17 @@ def main():
               help='Delete your specified Lightsail instance(s)')
     parser.add_argument('--ssh',action="store", metavar="NAME",
               help='SSH to your Lightsail instance')
+
+    firewall_management_group = parser.add_argument_group('Firewall Management')
+    firewall_management_group.add_argument('--ports',type=str, metavar="NAME",
+              help='Change the ports allowed through the default firewall (1-10,11,12,13-65535)')
+    firewall_management_group.add_argument('--protocol',type=str, metavar="NAME",
+              help='all|tcp|udp. ****all will default to 0-65535')
+    firewall_management_group.add_argument('--instance_name',
+                                           type=str,
+                                           metavar="NAME",
+                                           help='SSH Instance Name')
+
     args = parser.parse_args()  # reference args with args.argument_name
     if len(sys.argv)==1:
         parser.print_help()
@@ -81,19 +96,48 @@ def main():
       instances = Lightsail().list_instances()
       for i in instances['instances']:
         print("Name: %s, Username: %s, IP: %s, State: %s" % (i['name'], i['username'],i['publicIpAddress'],i['state']['name']))
-    
+
     if args.create:
       Lightsail().create_instance(args.create)
       print("#SSH Login: \n    ssh %s@%s -i %s" % (Lightsail().get_instance_username(args.create), Lightsail().get_instance_ip(args.create), localsshkeypath))
-    
+
     if args.delete:
       for name in args.delete:
         Lightsail().delete_instance(name)
-    
+
     if args.ssh:
       sshline = "ssh %s@%s -i %s" % (Lightsail().get_instance_username(args.ssh), Lightsail().get_instance_ip(args.ssh), localsshkeypath)
       print("Running the following command: \n\t" + sshline)
       subprocess.call(sshline, shell=True)
+
+    if args.ports or args.protocol:
+        port_info = []
+        if args.protocol != 'all':
+            port_comma = [int(p) for p in args.ports.split(',') if '-' not in p]
+            port_range = [p.split('-') for
+                        p in args.ports.split(',') if '-' in p]
+            port_list = port_comma + [x for sl in port_range for x in sl]
+            port_info = [{
+                'fromPort': int(p[0]),
+                'toPort': int(p[1]),
+                'protocol': args.protocol}
+                for p in port_range]
+            port_info += [{
+                'fromPort': int(p),
+                'toPort': int(p),
+                'protocol': args.protocol}
+                for p in port_comma]
+
+        else:
+            print('[!] Defaulting to 0-65535 for TCP/UDP (proto=all)')
+            port_info = [{
+                'fromPort': 0,
+                'toPort': 65535,
+                'protocol': args.protocol}]
+
+        Lightsail().put_instance_public_ports(
+            lightsail_name=args.instance_name,
+            ports=port_info)
 
 
 if __name__ == '__main__':
