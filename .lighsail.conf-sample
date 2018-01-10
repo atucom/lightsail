@@ -1,0 +1,5 @@
+[ssh]
+keyname = MyKeyName
+keypath = /Users/my_user/.ssh/
+region = us-east-2
+zone = us-east-2a
