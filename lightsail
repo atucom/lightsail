@@ -9,8 +9,6 @@ import subprocess
 import ConfigParser
 import os
 
-
-
 config = ConfigParser.ConfigParser()
 config.read(os.path.expanduser('~/.lightsail.conf'))
 
@@ -18,7 +16,6 @@ sshkeylocation = config.get('ssh','keyname')
 localsshkeypath = config.get('ssh', 'keypath') + sshkeylocation
 region = config.get('ssh', 'region')
 zone = config.get('ssh', 'zone')
-
 
 class Lightsail():
   def __init__(self):
