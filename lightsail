@@ -26,13 +26,14 @@ class Lightsail():
   def list_instances(self):
     return self.lightsailclient.get_instances()
 
-  def create_instance(self, lightsail_name):
-    '''Creates an Ubuntu 16.04 nano VPS'''
+  def create_instance(self, lightsail_name, blueprintid, bundleid):
+    '''Creates a VPS with the specified name, blueprintid(OS), 
+        and bundleid(hardware)'''
     response = self.lightsailclient.create_instances(
         instanceNames=[lightsail_name],
         availabilityZone=self.zone,
-        blueprintId='ubuntu_16_04',
-        bundleId='nano_1_0',
+        blueprintId=blueprintid,
+        bundleId=bundleid,
         keyPairName=sshkeylocation
     )
     return response
@@ -66,12 +67,17 @@ def main():
 
     parser.add_argument('--list',action="store_true",
               help='List your Lightsail instances')
-    parser.add_argument('--create', action="store", metavar="NAME",
-              help='Create your Lightsail instance given a instance name')
     parser.add_argument('--delete',action="store", nargs= "+", metavar="NAME",
               help='Delete your specified Lightsail instance(s)')
     parser.add_argument('--ssh',action="store", metavar="NAME",
               help='SSH to your Lightsail instance')
+    create_instance_args = parser.add_argument_group('New Instance Options')
+    create_instance_args.add_argument('--create', action="store", metavar="NAME",
+              help='Create your Lightsail instance given a instance name')
+    create_instance_args.add_argument('--os',type=str, metavar="debian|ubuntu",
+              help='debian 8.7 or ubuntu 16.04(default)')
+    create_instance_args.add_argument('--size',type=str, metavar="nano|micro|small",
+              help='nano(.5gb & default)/micro(1gb)/small(2gb)')
 
     firewall_management_group = parser.add_argument_group('Firewall Management')
     firewall_management_group.add_argument('--ports',type=str, metavar="NAME",
@@ -95,8 +101,25 @@ def main():
         print("Name: %s, Username: %s, IP: %s, State: %s" % (i['name'], i['username'],i['publicIpAddress'],i['state']['name']))
 
     if args.create:
-      Lightsail().create_instance(args.create)
-      print("#SSH Login: \n    ssh %s@%s -i %s" % (Lightsail().get_instance_username(args.create), Lightsail().get_instance_ip(args.create), localsshkeypath))
+        lightsail_name = args.create
+
+        if args.os == 'ubuntu':
+            blueprintid = 'ubuntu_16_04_1'
+        elif args.os == 'debian': 
+            blueprintid = 'debian_8_7'
+        else:
+            blueprintid = 'ubuntu_16_04_1'
+
+        if args.size == 'nano':
+            bundleid = 'nano_1_0'
+        elif args.size == 'micro':
+            bundleid = 'micro_1_0'
+        elif args.size == 'small':
+            bundleid = 'small_1_0'
+        else:
+            bundleid = 'nano_1_0'
+        Lightsail().create_instance(lightsail_name, blueprintid, bundleid)
+        print("#SSH Login: \n    ssh %s@%s -i %s" % (Lightsail().get_instance_username(args.create), Lightsail().get_instance_ip(args.create), localsshkeypath))
 
     if args.delete:
       for name in args.delete:
