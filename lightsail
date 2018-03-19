@@ -55,7 +55,10 @@ def main():
       # list Name: , Username:, IP:, State: for each instance on lightsail
       instances = Lightsail().list_instances()
       for i in instances['instances']:
-        print("Name: %s, Username: %s, IP: %s, State: %s" % (i['name'], i['username'],i['publicIpAddress'],i['state']['name']))
+        if i['state']['name'] == 'running':
+            print("Name: %s, Username: %s, IP: %s, State: %s" % (i['name'], i['username'],i['publicIpAddress'],i['state']['name']))
+        else:
+            print("Name: %s, Username: %s, IP: %s, State: %s" % (i['name'], i['username'], str(None), i['state']['name']))
 
     if args.create:
         lightsail_name = args.create
