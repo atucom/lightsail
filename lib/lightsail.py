@@ -4,14 +4,12 @@ import boto3
 import ConfigParser
 import os
 
-def conf_exists():
-    return os.path.exists(os.path.expanduser('~/.lightsail.conf'))
+config = ConfigParser.ConfigParser()
+config.read(os.path.expanduser('~/.lightsail.conf'))
 
-def get_conf():
-    config = ConfigParser.ConfigParser()
-    config.read(os.path.expanduser('~/.lightsail.conf'))
-    sshkeylocation = config.get('ssh','keyname')
-    localsshkeypath = config.get('ssh', 'keypath') + sshkeylocation
+sshkeylocation = config.get('ssh','keyname')
+region = config.get('ssh', 'region')
+zone = config.get('ssh', 'zone')
 
 class Lightsail():
   def __init__(self):
