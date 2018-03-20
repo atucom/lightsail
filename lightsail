@@ -7,14 +7,9 @@ import sys
 import subprocess
 import ConfigParser
 import os
-from lib.lightsail import Lightsail
+from lib.lightsail import *
 
 
-config = ConfigParser.ConfigParser()
-config.read(os.path.expanduser('~/.lightsail.conf'))
-
-sshkeylocation = config.get('ssh','keyname')
-localsshkeypath = config.get('ssh', 'keypath') + sshkeylocation
 
 def main():
     """Main Execution"""
@@ -49,6 +44,10 @@ def main():
     args = parser.parse_args()  # reference args with args.argument_name
     if len(sys.argv)==1:
         parser.print_help()
+        sys.exit(1)
+    
+    if not conf_exists():
+        print("Couldnt find your ~/.lightsail.conf file, exiting")
         sys.exit(1)
 
     if args.list:
